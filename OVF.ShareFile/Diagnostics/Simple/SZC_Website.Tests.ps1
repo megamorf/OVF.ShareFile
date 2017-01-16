@@ -1,4 +1,9 @@
-﻿Function ConvertFrom-HtmlTable
+﻿param(
+    [ValidateSet('http','https')]
+    $Protocol = 'http'
+)
+
+Function ConvertFrom-HtmlTable
 {
     param(
         [Parameter(Mandatory = $true)]
@@ -31,14 +36,14 @@
         ## If we’ve found a table header, remember its titles
         if($cells[0].tagName -eq "TH")
         {
-            $titles = @($cells | % { ("" + $_.InnerText).Trim() })
+            $titles = @($cells | Foreach-Object { ("" + $_.InnerText).Trim() })
             continue
         }
 
         ## If we haven’t found any table headers, make up names "P1", "P2", etc.
         if(-not $titles)
         {
-            $titles = @(1..($cells.Count + 2) | % { "P$_" })
+            $titles = @(1..($cells.Count + 2) | Foreach-Object { "P$_" })
         }
 
         ## Now go through the cells in the the row. For each, try to find the
@@ -64,7 +69,7 @@
 
 Describe 'ShareFile Health Check' {
     BeforeAll {
-        
+
         <# Doesn't work in scheduled task :(
         $WebRequest = Invoke-WebRequest -Uri 'http://localhost/configservice/PreFlightCheck.aspx'
         if($WebRequest.StatusCode -ne 200)
@@ -73,9 +78,10 @@ Describe 'ShareFile Health Check' {
         }
         #>
         try {
-            $websiteContent = (New-Object System.Net.WebClient).DownloadString("http://localhost/configservice/PreFlightCheck.aspx")
+            $Url = '{0}://localhost/configservice/PreFlightCheck.aspx' -f $Protocol
+            $websiteContent = (New-Object System.Net.WebClient).DownloadString($Url)
 
-            $html = new-object -ComObject "HTMLFile"
+            $html = New-Object -ComObject "HTMLFile"
             $src = [System.Text.Encoding]::Unicode.GetBytes($websiteContent)
             $html.write($src)
 
@@ -92,7 +98,7 @@ Describe 'ShareFile Health Check' {
             @{
                 Setting  = 'Storage Location Access'
                 Expected = 'Permissions OK'
-            }        
+            }
             @{
                 Setting  = 'IIS User Account Configuration'
                 Expected = 'OK'
@@ -150,10 +156,8 @@ Describe 'ShareFile Health Check' {
         It '<Setting> is OK' -TestCases $testCases {
             param ($Setting, $Expected)
 
-            $Actual = $Table | Where{$_."Config Name" -eq $Setting} | Select -ExpandProperty Details
+            $Actual = $Table | Where-Object {$_."Config Name" -eq $Setting} | Select-Object -ExpandProperty Details
             $Actual | Should BeLike $Expected
         }
-
     }
-
 }
