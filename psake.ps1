@@ -8,7 +8,7 @@ properties {
     $tests = "$projectRoot\Tests"   
 }
 
-task Default -depends Test
+task Default -depends Deploy
 
 Task Init {
     $lines
