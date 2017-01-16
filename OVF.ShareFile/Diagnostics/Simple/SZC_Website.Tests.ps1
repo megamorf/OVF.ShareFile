@@ -1,4 +1,5 @@
-﻿param(
+﻿[CmdletBinding()]
+param(
     [ValidateSet('http','https')]
     $Protocol = 'http'
 )
@@ -78,13 +79,20 @@ Describe 'ShareFile Health Check' {
         }
         #>
         try {
+            # Accept self-signed certs
+            [System.Net.ServicePointManager]::ServerCertificateValidationCallback = {$true}
+
+            # Query website
             $Url = '{0}://localhost/configservice/PreFlightCheck.aspx' -f $Protocol
+            Write-Verbose -Message "Querying url $Url"
             $websiteContent = (New-Object System.Net.WebClient).DownloadString($Url)
 
+            # Parse html code
             $html = New-Object -ComObject "HTMLFile"
             $src = [System.Text.Encoding]::Unicode.GetBytes($websiteContent)
             $html.write($src)
 
+            # Extract table and convert to object collection
             $Table = ConvertFrom-HtmlTable -WebRequest $html -TableNumber 0
         }
         catch {
