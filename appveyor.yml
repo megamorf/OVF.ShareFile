@@ -10,7 +10,7 @@ skip_commits:
 
 environment:
   PSGalleryApiKey:
-    secure: # add me
+    secure: Alk32amB7oHMxVtt2wpo4ABv8K2mcdzu8bEJOHZaak8V/oru+E0s3hUtGpYv3pm/
 
 build: false
 
