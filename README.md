@@ -1,3 +1,5 @@
+[![Build status](https://ci.appveyor.com/api/projects/status/h6satpvsv33aa9kc/branch/master?svg=true)](https://ci.appveyor.com/project/megamorf/ovf-sharefile/branch/master)
+
 # OVF.ShareFile
 
 ## Overview
