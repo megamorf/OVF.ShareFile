@@ -26,6 +26,7 @@ task Test -depends Init, Analyze, Pester  {
 }
 
 task Analyze -Depends Init {
+    $lines
     $saResults = Invoke-ScriptAnalyzer -Path $sut -Severity Error -Recurse -Verbose:$false
     if ($saResults) {
         $saResults | Format-Table
@@ -34,6 +35,7 @@ task Analyze -Depends Init {
 }
 
 task Pester -Depends Init {
+    $lines
     if(-not $ENV:BHProjectPath) {
         Set-BuildEnvironment -Path $PSScriptRoot\..
     }
@@ -47,24 +49,27 @@ task Pester -Depends Init {
     }
 }
 
-task Deploy -depends Test {
-    # Gate deployment
-    if(
-        $ENV:BHBuildSystem -ne 'Unknown' -and
-        $ENV:BHBranchName -eq "master" -and
-        $ENV:BHCommitMessage -match '!deploy'
-    ) {
-        $params = @{
-            Path = "$projectRoot\module.psdeploy.ps1"
-            Force = $true
-            Recurse = $false
-        }
-
-        Invoke-PSDeploy @Params
-    } else {
-        "Skipping deployment: To deploy, ensure that...`n" +
-        "`t* You are in a known build system (Current: $ENV:BHBuildSystem)`n" +
-        "`t* You are committing to the master branch (Current: $ENV:BHBranchName) `n" +
-        "`t* Your commit message includes !deploy (Current: $ENV:BHCommitMessage)"
+task Build -depends Test {
+    $lines
+    # Bump the module version
+    Try
+    {
+        $Version = Get-NextPSGalleryVersion -Name $env:BHProjectName -ErrorAction Stop
+        Update-Metadata -Path $env:BHPSModuleManifest -PropertyName ModuleVersion -Value $Version -ErrorAction Stop
     }
+    Catch
+    {
+        "Failed to update version for '$env:BHProjectName': $_.`nContinuing with existing version"
+    }
+}
+
+task Deploy -depends Build {
+    $lines
+
+    $Params = @{
+        Path = $ProjectRoot
+        Force = $true
+        Recurse = $false # We keep psdeploy artifacts, avoid deploying those : )
+    }
+    Invoke-PSDeploy @Verbose @Params
 }
